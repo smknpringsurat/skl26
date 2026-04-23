@@ -1,345 +1,45 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengumuman Kelulusan</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- React & ReactDOM (via CDN) -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel (Untuk menerjemahkan JSX di browser) -->
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <!-- Canvas Confetti untuk efek perayaan -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UJIAN ONLINE CBT</title>
+  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/9/98/Kota_Bengkulu.png" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #eee;
+      overflow: hidden; /* Mencegah scroll ganda */
+    }
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; }
-        
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #3b82f6;
-            width: 20px;
-            height: 20px;
-            -webkit-animation: spin 1s linear infinite;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+    .iframe-container {
+      width: 100%;
+      height: 100dvh; /* Menggunakan dvh agar pas di mobile browser */
+      overflow: hidden;
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-
-    <!-- Root Element untuk React -->
-    <div id="root" class="w-full max-w-lg"></div>
-
-    <!-- Skrip Aplikasi React -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        // =====================================================================
-        // PENGATURAN TAMPILAN DEPAN
-        // =====================================================================
-        const CONFIG = {
-            urlLogoSekolah: "https://smknpringsurat.sch.id/wp-content/uploads/2025/10/avatar.png", 
-            namaAplikasi: "Pengumuman Kelulusan",
-            subJudul: "Cek Status Kelulusan Anda Disini",
-            waktuPengumuman: "2026-04-21T07:50:00"
-        };
-
-        function App() {
-            // State Management
-            const [view, setView] = useState('loading'); // 'loading', 'countdown', 'search', 'result'
-            const [timeLeft, setTimeLeft] = useState({ d: '00', h: '00', m: '00', s: '00' });
-            const [nisn, setNisn] = useState('');
-            const [isSearching, setIsSearching] = useState(false);
-            const [notification, setNotification] = useState(null); // { message, type }
-            const [studentData, setStudentData] = useState(null);
-            const [logoError, setLogoError] = useState(false);
-
-            // Effect untuk memicu Confetti jika LULUS
-            useEffect(() => {
-                if (view === 'result' && studentData && studentData.keterangan) {
-                    const ket = studentData.keterangan.toUpperCase();
-                    // Pastikan mengandung kata LULUS dan TIDAK mengandung TIDAK LULUS
-                    if (ket.includes('LULUS') && !ket.includes('TIDAK LULUS')) {
-                        triggerConfetti();
-                    }
-                }
-            }, [view, studentData]);
-
-            // Fungsi meledakkan Confetti
-            const triggerConfetti = () => {
-                const count = 200;
-                const defaults = {
-                    origin: { y: 0.6 },
-                    zIndex: 9999
-                };
-
-                function fire(particleRatio, opts) {
-                    confetti(Object.assign({}, defaults, opts, {
-                        particleCount: Math.floor(count * particleRatio)
-                    }));
-                }
-
-                fire(0.25, { spread: 26, startVelocity: 55 });
-                fire(0.2, { spread: 60 });
-                fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-                fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-                fire(0.1, { spread: 120, startVelocity: 45 });
-            };
-
-            // Effect untuk Logika Countdown
-            useEffect(() => {
-                if (!CONFIG.waktuPengumuman || CONFIG.waktuPengumuman.trim() === "") {
-                    setView('search');
-                    return;
-                }
-
-                const targetDate = new Date(CONFIG.waktuPengumuman).getTime();
-
-                const timer = setInterval(() => {
-                    const now = new Date().getTime();
-                    const distance = targetDate - now;
-
-                    if (distance <= 0) {
-                        clearInterval(timer);
-                        if (view !== 'result') setView('search');
-                    } else {
-                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                        setTimeLeft({
-                            d: String(days).padStart(2, '0'),
-                            h: String(hours).padStart(2, '0'),
-                            m: String(minutes).padStart(2, '0'),
-                            s: String(seconds).padStart(2, '0')
-                        });
-                        
-                        // Jangan ubah view jika sedang melihat hasil
-                        if (view !== 'result') setView('countdown'); 
-                    }
-                }, 1000);
-
-                return () => clearInterval(timer); // Cleanup saat unmount
-            }, [view]);
-
-            // Fungsi Pencarian Data
-            const handleSearch = () => {
-                if (!nisn.trim()) {
-                    setNotification({ msg: 'Silakan masukkan NISN terlebih dahulu.', type: 'warning' });
-                    return;
-                }
-
-                setIsSearching(true);
-                setNotification(null);
-
-                // Cek apakah berjalan di lingkungan Google Apps Script
-                if (typeof google !== 'undefined' && google.script && google.script.run) {
-                    google.script.run
-                        .withSuccessHandler((response) => {
-                            setIsSearching(false);
-                            if (response.status === 'success') {
-                                setStudentData(response.data);
-                                setView('result');
-                            } else if (response.status === 'not_found') {
-                                setNotification({ msg: response.message, type: 'error' });
-                            } else {
-                                setNotification({ msg: response.message, type: 'warning' });
-                            }
-                        })
-                        .withFailureHandler((error) => {
-                            setIsSearching(false);
-                            setNotification({ msg: 'Gagal terhubung ke server. Silakan coba lagi.', type: 'error' });
-                        })
-                        .cariDataSiswa(nisn);
-                } else {
-                    // Fallback (Simulasi jika dijalankan di luar Google Apps Script / Local Testing)
-                    setTimeout(() => {
-                        setIsSearching(false);
-                        setNotification({ msg: 'Fungsi ini membutuhkan lingkungan Google Apps Script.', type: 'error' });
-                    }, 1500);
-                }
-            };
-
-            const handleKeyPress = (e) => {
-                if (e.key === 'Enter') handleSearch();
-            };
-
-            const resetSearch = () => {
-                setNisn('');
-                setStudentData(null);
-                setNotification(null);
-                setView('search');
-            };
-
-            // Dynamic Styling untuk Status Kelulusan
-            let statusColor = "bg-blue-100 text-blue-700 border-blue-500";
-            if (studentData && studentData.keterangan) {
-                const ket = studentData.keterangan.toUpperCase();
-                if (ket.includes('TIDAK LULUS')) {
-                    statusColor = "bg-red-100 text-red-700 border-red-500";
-                } else if (ket.includes('LULUS')) {
-                    statusColor = "bg-green-100 text-green-700 border-green-500";
-                }
-            }
-
-            return (
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    {/* Header Component */}
-                    <div className="bg-blue-600 p-6 text-center text-white">
-                        <div className="flex justify-center">
-                            {CONFIG.urlLogoSekolah.trim() !== "" && !logoError ? (
-                                <img 
-                                    src={CONFIG.urlLogoSekolah} 
-                                    alt="Logo Sekolah" 
-                                    className="h-20 sm:h-24 w-auto mb-3 object-contain drop-shadow-md"
-                                    onError={() => setLogoError(true)}
-                                />
-                            ) : (
-                                <i className="fas fa-graduation-cap text-5xl mb-3"></i>
-                            )}
-                        </div>
-                        <h1 className="text-2xl font-bold">{CONFIG.namaAplikasi}</h1>
-                        <p className="text-blue-100 text-sm mt-1">{CONFIG.subJudul}</p>
-                    </div>
-
-                    <div className="p-6">
-                        {/* VIEW: Loading Init */}
-                        {view === 'loading' && (
-                            <div className="flex justify-center py-8">
-                                <div className="loader !w-10 !h-10 !border-4 !border-t-blue-600"></div>
-                            </div>
-                        )}
-
-                        {/* VIEW: Countdown */}
-                        {view === 'countdown' && (
-                            <div className="flex flex-col items-center justify-center py-4 mb-4 animate-fade-in">
-                                <p className="text-sm font-medium text-gray-500 mb-4 uppercase tracking-widest text-center">Pengumuman dibuka dalam</p>
-                                <div className="flex gap-3 sm:gap-4 text-center">
-                                    {['Hari', 'Jam', 'Menit', 'Detik'].map((label, idx) => {
-                                        const val = idx === 0 ? timeLeft.d : idx === 1 ? timeLeft.h : idx === 2 ? timeLeft.m : timeLeft.s;
-                                        return (
-                                            <div key={label} className="bg-blue-50 border border-blue-100 rounded-xl p-3 w-16 sm:w-20 shadow-sm">
-                                                <div className="text-2xl sm:text-3xl font-bold text-blue-600">{val}</div>
-                                                <div className="text-[10px] sm:text-xs text-blue-400 font-semibold mt-1 uppercase">{label}</div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* VIEW: Search Form */}
-                        {view === 'search' && (
-                            <div className="animate-fade-in">
-                                <label htmlFor="nisn" className="block text-sm font-medium text-gray-700 mb-2">Masukkan NISN</label>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <input 
-                                        type="text" 
-                                        id="nisn" 
-                                        placeholder="Contoh: 0012345678" 
-                                        className="w-full px-4 py-3 sm:py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg sm:text-base text-center sm:text-left shadow-sm"
-                                        inputMode="numeric"
-                                        value={nisn}
-                                        onChange={(e) => setNisn(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        disabled={isSearching}
-                                    />
-                                    <button 
-                                        onClick={handleSearch} 
-                                        disabled={isSearching}
-                                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 sm:py-4 rounded-xl font-medium transition flex items-center justify-center min-w-[120px] shadow-md active:scale-95"
-                                    >
-                                        {isSearching ? <div className="loader"></div> : <span className="text-lg sm:text-base">Cari</span>}
-                                    </button>
-                                </div>
-                                
-                                {/* Notification Message */}
-                                {notification && (
-                                    <div className={`mt-4 p-3 rounded-lg text-sm text-center font-medium ${
-                                        notification.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' :
-                                        notification.type === 'warning' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                                        'bg-blue-50 text-blue-600 border border-blue-200'
-                                    }`}>
-                                        {notification.msg}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* VIEW: Result Card */}
-                        {view === 'result' && studentData && (
-                            <div className="mt-2 animate-fade-in">
-                                <div className="bg-gray-50 rounded-xl p-5 mb-6 border border-gray-200 shadow-inner space-y-4">
-                                    <div className="border-b border-gray-200 pb-3">
-                                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Nama Lengkap</p>
-                                        <p className="text-lg font-bold text-gray-800">{studentData.nama}</p>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row gap-4 border-b border-gray-200 pb-3">
-                                        <div className="flex-1">
-                                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">NISN</p>
-                                            <p className="text-base font-semibold text-gray-800">{studentData.nisn}</p>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Jenis Kelamin</p>
-                                            <p className="text-base font-semibold text-gray-800">
-                                                {studentData.jk === 'L' ? 'Laki-Laki' : (studentData.jk === 'P' ? 'Perempuan' : studentData.jk)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="border-b border-gray-200 pb-3">
-                                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Tempat, Tanggal Lahir</p>
-                                        <p className="text-base font-semibold text-gray-800">{studentData.tempatLahir}, {studentData.tanggalLahir}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Kelas</p>
-                                        <p className="text-base font-semibold text-gray-800">{studentData.kelas}</p>
-                                    </div>
-                                </div>
-
-                                <div className="text-center">
-                                    <p className="text-sm text-gray-500 mb-2">Berdasarkan rapat dewan guru, Anda dinyatakan:</p>
-                                    <div className={`text-3xl font-extrabold py-4 rounded-xl uppercase tracking-widest mb-6 border-2 shadow-sm ${statusColor}`}>
-                                        {studentData.keterangan}
-                                    </div>
-                                </div>
-
-                                <button 
-                                    onClick={resetSearch} 
-                                    className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2 active:scale-95 text-lg sm:text-base shadow-sm"
-                                >
-                                    <i className="fas fa-undo"></i> Cari Data Lain
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        // Render React ke DOM
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-    
-    <style>
-        /* Tambahan animasi smooth fade in dari React */
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+<body>
+  <div class="iframe-container">
+    <iframe
+      id="app"
+      src="https://script.google.com/macros/s/AKfycbxkFwXb9V5LF5DlnPADTn4bgt6fjGljmthPnjY0P2fsZqlhWZJTUrrUEW7BFBl5E9B-/exec"
+      scrolling="yes"
+      allowfullscreen="true"
+      webkitallowfullscreen="true"
+      mozallowfullscreen="true"
+      allow="fullscreen; camera; microphone; display-capture; geolocation;">
+    </iframe>
+  </div>
 </body>
 </html>
